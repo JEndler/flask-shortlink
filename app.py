@@ -6,14 +6,17 @@ import shelve
 from random import choice
 from string import ascii_lowercase
 import datetime
-from flask_wtf import FlaskForm, RecaptchaField
+from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField
 from wtforms.validators import Length, URL
+from os import urandom
 
 app = Flask(__name__, template_folder="templates")
 URL_SHELVE_PATH = 'urls.shelve'
 ANALYTICS_SHELVE_PATH = 'analytics.shelve'
 DEBUG = True
+app.config['SECRET_KEY'] = urandom(32)
+BASE_URL = "https://sl.s2s-bonn.de"
 
 
 class ShortlinkForm(FlaskForm):
@@ -25,9 +28,15 @@ class ShortlinkForm(FlaskForm):
 
 @app.route('/', methods=["GET", "POST"])
 def root():
-    if request.method == "POST":
-        pass
-    return render_template("index.html")
+    form = ShortlinkForm()
+    shortlink_url = None
+    if request.method == "POST" and form.validate_on_submit():
+        url = form.url.data
+        _debug(url)
+        id = _create_shortlink(url)
+        shortlink_url = BASE_URL + url_for('get_url', id=id)
+        form.url.data = ''
+    return render_template("index.html", form=form, url=shortlink_url)
 
 
 @app.route('/<id>')
@@ -40,8 +49,15 @@ def get_url(id: str):
 
 
 @app.route('/analytics/<id>')
-def analytics():
-    pass
+def analytics(id):
+    data = _loadData(id)
+    return 'Total Hits: ' + len(data)
+
+
+@app.route('/analytics')
+def analytics_index():
+    linklist = _loadShortlinks()
+    return render_template('analytics_index.html', linklist=linklist)
 
 
 def _create_shortlink(url: str) -> str:
@@ -72,9 +88,22 @@ def _updateData(request: Request, id: str):
     with shelve.open(ANALYTICS_SHELVE_PATH, 'c') as shelf:
         shelf[id].append({
             'timestamp': datetime.datetime.now(),
-            'ip': request_ip(),
+            'ip': request_ip,
             'user_agent': user_agent
         })
+
+
+def _loadData(id: str):
+    with shelve.open(ANALYTICS_SHELVE_PATH, 'r') as shelf:
+        return shelf[id]
+
+
+def _loadShortlinks():
+    res = []
+    with shelve.open(URL_SHELVE_PATH, 'r') as shelf:
+        for key in shelf.keys():
+            res.append((str(BASE_URL + '/' + str(key)), shelf[key]))
+    return res
 
 
 def _debug(s):
@@ -83,8 +112,6 @@ def _debug(s):
 
 
 def main():
-    #print(_create_shortlink('http://jakobendler.eu'))
-    print(_lookup_url('kra'))
     app.run('localhost')
 
 
