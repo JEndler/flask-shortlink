@@ -11,7 +11,7 @@ from wtforms import SubmitField, StringField
 from wtforms.validators import Length, URL
 from os import urandom
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates", static_folder="static")
 URL_SHELVE_PATH = 'urls.shelve'
 ANALYTICS_SHELVE_PATH = 'analytics.shelve'
 DEBUG = True
@@ -50,8 +50,8 @@ def get_url(id: str):
 
 @app.route('/analytics/<id>')
 def analytics(id):
-    data = _loadData(id)
-    return 'Total Hits: ' + len(data)
+    data = _prepareData(id)
+    return render_template("analytics.html", total_visits=len(_loadData(id)), timeseries_data=data)
 
 
 @app.route('/analytics')
@@ -86,11 +86,13 @@ def _updateData(request: Request, id: str):
     request_ip = request.remote_addr
     user_agent = request.user_agent.platform
     with shelve.open(ANALYTICS_SHELVE_PATH, 'c') as shelf:
-        shelf[id].append({
+        data = shelf[id]
+        data.append({
             'timestamp': datetime.datetime.now(),
             'ip': request_ip,
             'user_agent': user_agent
         })
+        shelf[id] = data
 
 
 def _loadData(id: str):
@@ -98,11 +100,23 @@ def _loadData(id: str):
         return shelf[id]
 
 
+def _prepareData(id: str):
+    # Format [yy-mm-dd, hits]
+    # Format [Android_Hits, ect]
+    data = _loadData(id)
+    result = []
+    for date in sorted(set([x['timestamp'].date() for x in data])):
+        datestring = (str(date.year) + "-" + str(date.month) + "-" + str(date.day))
+        visits = len([x['ip'] for x in data if x['timestamp'].date() == date])
+        result.append((datestring, visits))
+    return result
+
+
 def _loadShortlinks():
     res = []
     with shelve.open(URL_SHELVE_PATH, 'r') as shelf:
         for key in shelf.keys():
-            res.append((str(BASE_URL + '/' + str(key)), shelf[key]))
+            res.append((str(BASE_URL + '/' + str(key)), shelf[key], (str(BASE_URL + '/analytics/' + str(key)))))
     return res
 
 
@@ -112,6 +126,7 @@ def _debug(s):
 
 
 def main():
+    print(_prepareData("img"))
     app.run('localhost')
 
 

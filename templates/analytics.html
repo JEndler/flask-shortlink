@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Flask-Shortlink</title>
+    <meta name="description" content="A minimal Flask-Shortlink System">
+    <meta name="Jakob Endler">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style type="text/css">
+    .col-md-4 {
+        border: 1px solid blue;
+    }
+    </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+
+      // Load the Visualization API and the corechart package.
+      google.charts.load('current', {'packages':['corechart', 'line']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.charts.setOnLoadCallback(drawChart);
+
+      // Callback that creates and populates a data table,
+      // instantiates the pie chart, passes in the data and
+      // draws it.
+      function drawChart() {
+
+      var data = new google.visualization.DataTable();
+      data.addColumn('string', 'Day');
+      data.addColumn('number', 'Visits');
+
+      data.addRows([
+        {% for row in timeseries_data %}
+        ["{{ row[0] }}", {{ row[1] }}],
+        {% endfor %}
+        ["Future", 0]
+      ]);
+
+      data.removeRow(data.getNumberOfRows() - 1);
+
+      var options = {
+        chart: {
+          title: 'Shortlink Visits over Time:'
+        },
+        width: 900,
+        height: 500
+      };
+
+      var chart = new google.charts.Line(document.getElementById('linechart_material'));
+
+      chart.draw(data, google.charts.Line.convertOptions(options));
+    }
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <h2>URL Shortener - Analytics</h2>
+            <h3>Total Visits: {{ total_visits }}</h3>
+        </div>
+        <div id="linechart_material"></div>
+    </div>
+</body>
+
+</html>
