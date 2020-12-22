@@ -54,6 +54,13 @@ def analytics(id):
     return render_template("analytics.html", total_visits=len(_loadData(id)), timeseries_data=data)
 
 
+@app.route('/delete/<id>')
+def delete(id):
+    with shelve.open(URL_SHELVE_PATH, 'c') as shelf:
+        del shelf[id]
+    return analytics_index()
+
+
 @app.route('/analytics')
 def analytics_index():
     linklist = _loadShortlinks()
