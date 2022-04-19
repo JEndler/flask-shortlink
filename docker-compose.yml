@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    volumes:
+      - .:/flask-shortlink
+    ports:
+      - "8019:8019"

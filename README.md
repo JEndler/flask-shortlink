@@ -10,6 +10,16 @@ You can clone this repository, then just type "poetry install" and all the neces
 
 You can then use a production Webserver of your choice to host this app.
 
+---
+
+There is also a working Dockerfile that you can run using:
+
+```bash
+sudo docker build --network="host" .
+```
+
+It will run the shortlink service on localhost:8019
+
 ### Demo
 
 The default landing page looks like this:
