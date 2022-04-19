@@ -12,4 +12,4 @@ RUN poetry install
 
 EXPOSE 8019
 
-RUN poetry run gunicorn -w 2 -b 127.0.0.1:8019 wsgi:app
+CMD poetry run gunicorn -w 2 -b 127.0.0.1:8019 wsgi:app
